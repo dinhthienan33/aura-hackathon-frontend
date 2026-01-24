@@ -3,13 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { ChatInterfaceProps, Message } from "@/types";
 import { Send, User } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 export default function ChatInterface({
   messages,
   onSendMessage,
   isTyping,
   userName,
+  language,
 }: ChatInterfaceProps) {
+  const t = useTranslation(language);
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -28,7 +31,8 @@ export default function ChatInterface({
   };
 
   const formatTime = (date: Date) => {
-    return new Intl.DateTimeFormat("vi-VN", {
+    const locale = language === "vi" ? "vi-VN" : "en-US";
+    return new Intl.DateTimeFormat(locale, {
       hour: "2-digit",
       minute: "2-digit",
     }).format(date);
@@ -105,11 +109,9 @@ export default function ChatInterface({
     <div className="flex flex-col h-full bg-white rounded-3xl shadow-xl overflow-hidden">
       {/* Chat Header */}
       <div className="bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-4">
-        <h3 className="text-elderly-xl font-bold text-white">
-          💬 Trò chuyện cùng Aura
-        </h3>
+        <h3 className="text-elderly-xl font-bold text-white">{t.chatTitle}</h3>
         <p className="text-elderly-sm text-blue-100 mt-1">
-          Aura luôn lắng nghe và đồng hành cùng {userName}
+          {t.chatSubtitle.replace("{{userName}}", userName)}
         </p>
       </div>
 
@@ -117,10 +119,8 @@ export default function ChatInterface({
       <div className="flex-1 overflow-y-auto p-6 chat-container bg-gradient-to-b from-slate-50 to-white min-h-[300px] max-h-[500px]">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-400">
-            <div className="text-6xl mb-4">👋</div>
-            <p className="text-elderly-lg text-center">
-              Hãy nói "Xin chào" để bắt đầu trò chuyện!
-            </p>
+            <div className="text-6xl mb-4">{t.emptyStateGreeting}</div>
+            <p className="text-elderly-lg text-center">{t.emptyStateMessage}</p>
           </div>
         ) : (
           <>
@@ -159,7 +159,7 @@ export default function ChatInterface({
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Nhập tin nhắn của bạn..."
+            placeholder={t.inputPlaceholder}
             className="
               flex-1 px-6 py-4 
               text-elderly-base
@@ -188,7 +188,9 @@ export default function ChatInterface({
           </button>
         </div>
         <p className="text-sm text-slate-400 mt-2 text-center">
-          Nhấn Enter hoặc nút gửi để gửi tin nhắn • Hoặc nhấn nút micro để nói
+          {language === "vi"
+            ? "Nhấn Enter hoặc nút gửi để gửi tin nhắn • Hoặc nhấn nút micro để nói"
+            : "Press Enter or send button to send • Or press mic button to speak"}
         </p>
       </form>
     </div>

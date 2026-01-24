@@ -1,12 +1,15 @@
 "use client";
 
 import { StatusBarProps } from "@/types";
-import { Wifi, WifiOff, Settings, HelpCircle, Home } from "lucide-react";
+import { Settings, HelpCircle, Home } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 export default function StatusBar({
   isConnected,
   onSettingsClick,
+  language,
 }: StatusBarProps) {
+  const t = useTranslation(language);
   return (
     <header className="bg-white shadow-sm border-b border-slate-200 px-6 py-4 sticky top-0 z-30">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -17,11 +20,9 @@ export default function StatusBar({
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
-              Aura
+              {t.appName}
             </h1>
-            <p className="text-base text-slate-500">
-              Người bạn AI đồng hành cho người cao tuổi
-            </p>
+            <p className="text-base text-slate-500">{t.appDescription}</p>
           </div>
         </div>
 
@@ -32,14 +33,14 @@ export default function StatusBar({
             className="flex items-center gap-2 text-lg text-slate-600 hover:text-blue-600 transition-colors"
           >
             <Home className="w-5 h-5" />
-            Trang chủ
+            {t.home}
           </a>
           <a
             href="#"
             className="flex items-center gap-2 text-lg text-slate-600 hover:text-blue-600 transition-colors"
           >
             <HelpCircle className="w-5 h-5" />
-            Hướng dẫn
+            {t.guide}
           </a>
         </nav>
 
@@ -56,13 +57,8 @@ export default function StatusBar({
             }
           `}
           >
-            {isConnected ? (
-              <Wifi className="w-5 h-5" />
-            ) : (
-              <WifiOff className="w-5 h-5" />
-            )}
-            <span className="font-medium hidden sm:inline">
-              {isConnected ? "Đã kết nối" : "Mất kết nối"}
+            <span className="font-medium">
+              {isConnected ? t.connected : t.disconnected}
             </span>
           </div>
 
@@ -76,7 +72,7 @@ export default function StatusBar({
               flex items-center justify-center
               transition-all duration-200
             "
-            aria-label="Cài đặt"
+            aria-label={t.settings}
           >
             <Settings className="w-6 h-6 text-slate-600" />
           </button>

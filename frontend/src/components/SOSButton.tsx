@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { SOSButtonProps } from "@/types";
 import { Phone, X, AlertTriangle } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
-export default function SOSButton({ onClick }: SOSButtonProps) {
+export default function SOSButton({ onClick, language }: SOSButtonProps) {
+  const t = useTranslation(language);
   const [showConfirm, setShowConfirm] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const [isActivated, setIsActivated] = useState(false);
@@ -55,10 +57,14 @@ export default function SOSButton({ onClick }: SOSButtonProps) {
           hover:scale-110
           sos-pulse
         "
-        aria-label="Nút SOS - Gọi trợ giúp khẩn cấp"
+        aria-label={
+          t.sosButton +
+          " - " +
+          (language === "vi" ? "Gọi trợ giúp khẩn cấp" : "Emergency call")
+        }
       >
         <Phone className="w-8 h-8 md:w-10 md:h-10 mb-1" />
-        <span className="text-sm md:text-base font-bold">SOS</span>
+        <span className="text-sm md:text-base font-bold">{t.sosButton}</span>
       </button>
 
       {/* Confirmation Modal */}
@@ -74,13 +80,13 @@ export default function SOSButton({ onClick }: SOSButtonProps) {
 
             {/* Content */}
             <h2 className="text-elderly-xl font-bold text-center text-slate-800 mb-4">
-              {isActivated ? "Đang gọi trợ giúp..." : "Xác nhận gọi trợ giúp?"}
+              {isActivated ? t.sosCallingTitle : t.sosConfirmTitle}
             </h2>
 
             <p className="text-elderly-base text-center text-slate-600 mb-6">
               {isActivated
-                ? `Đang liên hệ người thân trong ${countdown} giây...`
-                : "Aura sẽ thông báo đến người thân của bạn rằng bạn cần được hỗ trợ."}
+                ? `${t.sosCallingMessage} ${countdown} ${language === "vi" ? "giây" : "seconds"}...`
+                : t.sosConfirmMessage}
             </p>
 
             {/* Countdown Circle (when activated) */}
@@ -114,7 +120,7 @@ export default function SOSButton({ onClick }: SOSButtonProps) {
                     "
                   >
                     <Phone className="w-7 h-7" />
-                    Gọi ngay
+                    {t.sosCallNow}
                   </button>
                   <button
                     onClick={handleCancel}
@@ -128,7 +134,7 @@ export default function SOSButton({ onClick }: SOSButtonProps) {
                     "
                   >
                     <X className="w-7 h-7" />
-                    Hủy bỏ
+                    {t.sosCancel}
                   </button>
                 </>
               ) : (
@@ -144,14 +150,14 @@ export default function SOSButton({ onClick }: SOSButtonProps) {
                   "
                 >
                   <X className="w-7 h-7" />
-                  Hủy cuộc gọi
+                  {t.sosCancelCall}
                 </button>
               )}
             </div>
 
             {/* Help Text */}
             <p className="text-sm text-slate-500 text-center mt-6">
-              Chỉ sử dụng khi bạn thực sự cần trợ giúp
+              {t.sosHelpText}
             </p>
           </div>
         </div>

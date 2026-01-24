@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { VoiceButtonProps } from "@/types";
 import { Mic, MicOff, Volume2 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 export default function VoiceButton({
   onVoiceStart,
@@ -10,7 +11,9 @@ export default function VoiceButton({
   onTranscript,
   isListening,
   disabled,
+  language,
 }: VoiceButtonProps) {
+  const t = useTranslation(language);
   const recognitionRef = useRef<any>(null);
   const [isSupported, setIsSupported] = useState(true);
   const [audioLevel, setAudioLevel] = useState(0);
@@ -30,7 +33,7 @@ export default function VoiceButton({
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = "vi-VN";
+      recognition.lang = language === "vi" ? "vi-VN" : "en-US";
 
       recognition.onresult = (event: any) => {
         let finalTranscript = "";
@@ -58,9 +61,11 @@ export default function VoiceButton({
       recognition.onerror = (event: any) => {
         console.error("Speech recognition error:", event.error);
         if (event.error === "not-allowed") {
-          alert(
-            "Vui lòng cho phép truy cập microphone để sử dụng tính năng này.",
-          );
+          const msg =
+            language === "vi"
+              ? "Vui lòng cho phép truy cập microphone để sử dụng tính năng này."
+              : "Please allow microphone access to use this feature.";
+          alert(msg);
         }
       };
 
@@ -132,7 +137,9 @@ export default function VoiceButton({
           <MicOff className="w-12 h-12 text-slate-500" />
         </div>
         <p className="text-elderly-sm text-slate-500 mt-3">
-          Trình duyệt không hỗ trợ nhận diện giọng nói
+          {language === "vi"
+            ? "Trình duyệt không hỗ trợ nhận diện giọng nói"
+            : "Browser does not support voice recognition"}
         </p>
       </div>
     );
@@ -199,17 +206,17 @@ export default function VoiceButton({
       `}
       >
         {disabled
-          ? "Đang kết nối..."
+          ? language === "vi"
+            ? "Đang kết nối..."
+            : "Connecting..."
           : isListening
-            ? "🎤 Đang nghe... Nhấn để dừng"
-            : "🎙️ Nhấn để nói chuyện"}
+            ? t.clickToStop
+            : t.clickToSpeak}
       </p>
 
       {/* Help Text */}
       <p className="text-elderly-sm text-slate-500 mt-2 text-center max-w-[200px]">
-        {isListening
-          ? "Hãy nói rõ ràng và chậm rãi"
-          : "Giữ microphone gần miệng khi nói"}
+        {isListening ? t.speakClearly : t.keepMicClose}
       </p>
     </div>
   );

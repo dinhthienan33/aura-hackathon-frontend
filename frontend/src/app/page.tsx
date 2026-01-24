@@ -10,6 +10,7 @@ import SettingsPanel from "@/components/SettingsPanel";
 import WelcomeModal from "@/components/WelcomeModal";
 import { Message, AuraState, Settings } from "@/types";
 import { getTTS, TextToSpeech } from "@/lib/tts";
+import { useTranslation } from "@/lib/i18n";
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -21,12 +22,14 @@ export default function Home() {
   const [currentTranscript, setCurrentTranscript] = useState("");
   const [auraState, setAuraState] = useState<AuraState>("idle");
   const [settings, setSettings] = useState<Settings>({
-    userName: "Bạn",
+    userName: "You",
     fontSize: "large",
     voiceSpeed: "normal",
     theme: "light",
+    language: "en",
   });
 
+  const t = useTranslation(settings.language);
   const ttsRef = useRef<TextToSpeech | null>(null);
 
   // Simulate connection status
@@ -57,8 +60,11 @@ export default function Home() {
 
       try {
         const rate = TextToSpeech.getRateFromSetting(settings.voiceSpeed);
+        const lang = settings.language === "vi" ? "vi-VN" : "en-US";
+
         await ttsRef.current.speak(text, {
           rate,
+          lang,
           onEnd: () => {
             setIsSpeaking(false);
             setAuraState("idle");
@@ -70,7 +76,7 @@ export default function Home() {
         setAuraState("idle");
       }
     },
-    [settings.voiceSpeed],
+    [settings.voiceSpeed, settings.language],
   );
 
   // Add welcome message from Aura
@@ -78,7 +84,7 @@ export default function Home() {
     if (!showWelcome && messages.length === 0) {
       const welcomeMessage: Message = {
         id: "1",
-        text: `Xin chào ${settings.userName}! Tôi là Aura, người bạn đồng hành của bạn. Hôm nay bạn cảm thấy thế nào? Tôi luôn ở đây để lắng nghe và trò chuyện cùng bạn. 💙`,
+        text: t.welcomeMessage.replace("{{userName}}", settings.userName),
         sender: "aura",
         timestamp: new Date(),
       };
@@ -89,7 +95,7 @@ export default function Home() {
         speakMessage(welcomeMessage.text);
       }, 500);
     }
-  }, [showWelcome, settings.userName, speakMessage]);
+  }, [showWelcome, settings.userName, t, speakMessage]);
 
   const handleSendMessage = useCallback(
     (text: string) => {
@@ -108,10 +114,10 @@ export default function Home() {
       // Simulate Aura's response (will be replaced with actual API call)
       setTimeout(() => {
         const responses = [
-          `Tôi hiểu ${settings.userName} ạ. Điều đó nghe có vẻ rất ý nghĩa. Bạn có muốn kể thêm cho tôi nghe không?`,
-          `Cảm ơn ${settings.userName} đã chia sẻ với tôi. Tôi rất vui được lắng nghe bạn.`,
-          `Đúng vậy ${settings.userName}! Tôi luôn ở đây cùng bạn. Chúng ta có thể nói chuyện về bất cứ điều gì bạn muốn.`,
-          `Tôi nhớ lần trước ${settings.userName} có kể về gia đình mình. Gần đây mọi người thế nào rồi ạ?`,
+          t.response1.replace("{{userName}}", settings.userName),
+          t.response2.replace("{{userName}}", settings.userName),
+          t.response3.replace("{{userName}}", settings.userName),
+          t.response4.replace("{{userName}}", settings.userName),
         ];
         const randomResponse =
           responses[Math.floor(Math.random() * responses.length)];
@@ -164,14 +170,17 @@ export default function Home() {
 
     const sosMessage: Message = {
       id: Date.now().toString(),
-      text: "🆘 YÊU CẦU HỖ TRỢ KHẨN CẤP",
+      text: t.sosEmergency,
       sender: "system",
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, sosMessage]);
 
     setTimeout(() => {
-      const responseText = `${settings.userName} ơi, tôi đã nhận được yêu cầu hỗ trợ của bạn. Tôi đang liên hệ với người thân của bạn ngay. Bạn có thể cho tôi biết bạn cần giúp đỡ gì không?`;
+      const responseText = t.sosResponse.replace(
+        "{{userName}}",
+        settings.userName,
+      );
       const auraResponse: Message = {
         id: (Date.now() + 1).toString(),
         text: responseText,
@@ -185,33 +194,42 @@ export default function Home() {
         speakMessage(responseText);
       }, 300);
     }, 500);
-  }, [settings.userName, speakMessage]);
+  }, [settings.userName, t, speakMessage]);
 
   const handleCloseWelcome = useCallback((name: string) => {
     setSettings((prev) => ({ ...prev, userName: name }));
     setShowWelcome(false);
   }, []);
 
+  const handleLanguageChange = useCallback((language: "en" | "vi") => {
+    setSettings((prev) => ({ ...prev, language }));
+  }, []);
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
       {/* Welcome Modal */}
-      {showWelcome && <WelcomeModal onClose={handleCloseWelcome} />}
+      {showWelcome && (
+        <WelcomeModal
+          onClose={handleCloseWelcome}
+          language={settings.language}
+          onLanguageChange={handleLanguageChange}
+        />
+      )}
 
       {/* Header/Navbar */}
       <StatusBar
         isConnected={isConnected}
         onSettingsClick={() => setShowSettings(true)}
+        language={settings.language}
       />
 
       {/* Hero Section - giới thiệu ngắn */}
       <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-6 px-4">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-2xl md:text-3xl font-bold mb-2">
-            Chào mừng {settings.userName} đến với Aura! 👋
+            {t.welcome.replace("{{userName}}", settings.userName)} 👋
           </h2>
-          <p className="text-lg text-blue-100">
-            Hãy bắt đầu trò chuyện - Aura luôn sẵn sàng lắng nghe bạn
-          </p>
+          <p className="text-lg text-blue-100">{t.heroSubtitle}</p>
         </div>
       </section>
 
@@ -223,7 +241,7 @@ export default function Home() {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-3xl shadow-xl p-6 sticky top-32">
                 <h3 className="text-xl font-bold text-slate-700 mb-4 text-center">
-                  Trợ lý ảo của bạn
+                  {t.virtualAssistant}
                 </h3>
 
                 <div className="flex flex-col items-center">
@@ -241,6 +259,7 @@ export default function Home() {
                       onTranscript={handleVoiceTranscript}
                       isListening={isListening}
                       disabled={!isConnected}
+                      language={settings.language}
                     />
                   </div>
 
@@ -263,6 +282,7 @@ export default function Home() {
                 onSendMessage={handleSendMessage}
                 isTyping={auraState === "thinking"}
                 userName={settings.userName}
+                language={settings.language}
               />
             </div>
           </div>
@@ -274,18 +294,16 @@ export default function Home() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🌟</span>
-            <span className="font-bold text-lg">Aura</span>
+            <span className="font-bold text-lg">{t.appName}</span>
             <span className="text-slate-400">|</span>
-            <span className="text-slate-300">Người bạn AI đồng hành</span>
+            <span className="text-slate-300">{t.appDescription}</span>
           </div>
-          <div className="text-slate-400 text-sm">
-            © 2026 Aura Project - Designed for Elderly Care
-          </div>
+          <div className="text-slate-400 text-sm">{t.footerCopyright}</div>
         </div>
       </footer>
 
       {/* SOS Button - Always visible */}
-      <SOSButton onClick={handleSOSClick} />
+      <SOSButton onClick={handleSOSClick} language={settings.language} />
 
       {/* Settings Panel */}
       {showSettings && (
@@ -293,6 +311,7 @@ export default function Home() {
           settings={settings}
           onSettingsChange={setSettings}
           onClose={() => setShowSettings(false)}
+          language={settings.language}
         />
       )}
     </main>

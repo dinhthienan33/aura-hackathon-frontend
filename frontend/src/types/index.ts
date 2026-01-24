@@ -7,11 +7,14 @@ export interface Message {
 
 export type AuraState = "idle" | "listening" | "thinking" | "speaking";
 
+export type Language = "en" | "vi";
+
 export interface Settings {
   userName: string;
   fontSize: "normal" | "large" | "extra-large";
   voiceSpeed: "slow" | "normal" | "fast";
   theme: "light" | "dark";
+  language: Language;
 }
 
 export interface AvatarProps {
@@ -25,10 +28,12 @@ export interface ChatInterfaceProps {
   onSendMessage: (text: string) => void;
   isTyping: boolean;
   userName: string;
+  language: Language;
 }
 
 export interface SOSButtonProps {
   onClick: () => void;
+  language: Language;
 }
 
 export interface VoiceButtonProps {
@@ -37,19 +42,24 @@ export interface VoiceButtonProps {
   onTranscript: (transcript: string) => void;
   isListening: boolean;
   disabled?: boolean;
+  language: Language;
 }
 
 export interface StatusBarProps {
   isConnected: boolean;
   onSettingsClick: () => void;
+  language: Language;
 }
 
 export interface SettingsPanelProps {
   settings: Settings;
   onSettingsChange: (settings: Settings) => void;
   onClose: () => void;
+  language: Language;
 }
 
 export interface WelcomeModalProps {
   onClose: (name: string) => void;
+  language: Language;
+  onLanguageChange: (language: Language) => void;
 }

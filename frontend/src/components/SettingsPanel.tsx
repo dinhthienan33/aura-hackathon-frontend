@@ -1,20 +1,33 @@
 "use client";
 
 import { SettingsPanelProps } from "@/types";
-import { X, User, Type, Volume2, Sun, Moon, Phone, Heart } from "lucide-react";
+import {
+  X,
+  User,
+  Type,
+  Volume2,
+  Sun,
+  Moon,
+  Phone,
+  Heart,
+  Globe,
+} from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 export default function SettingsPanel({
   settings,
   onSettingsChange,
   onClose,
+  language,
 }: SettingsPanelProps) {
+  const t = useTranslation(language);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 rounded-t-3xl flex items-center justify-between">
           <h2 className="text-elderly-xl font-bold text-slate-800">
-            ⚙️ Cài đặt
+            {t.settingsTitle}
           </h2>
           <button
             onClick={onClose}
@@ -33,7 +46,7 @@ export default function SettingsPanel({
                 <User className="w-5 h-5 text-blue-600" />
               </div>
               <label className="text-elderly-lg font-semibold text-slate-700">
-                Tên của bạn
+                {t.userName}
               </label>
             </div>
             <input
@@ -50,7 +63,7 @@ export default function SettingsPanel({
                 focus:border-blue-400 focus:ring-4 focus:ring-blue-100
                 transition-all
               "
-              placeholder="Nhập tên của bạn"
+              placeholder={t.userNamePlaceholder}
             />
           </div>
 
@@ -61,14 +74,18 @@ export default function SettingsPanel({
                 <Type className="w-5 h-5 text-purple-600" />
               </div>
               <label className="text-elderly-lg font-semibold text-slate-700">
-                Cỡ chữ
+                {t.fontSize}
               </label>
             </div>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { value: "normal", label: "Vừa", size: "text-base" },
-                { value: "large", label: "Lớn", size: "text-lg" },
-                { value: "extra-large", label: "Rất lớn", size: "text-xl" },
+                { value: "normal", label: t.fontNormal, size: "text-base" },
+                { value: "large", label: t.fontLarge, size: "text-lg" },
+                {
+                  value: "extra-large",
+                  label: t.fontExtraLarge,
+                  size: "text-xl",
+                },
               ].map((option) => (
                 <button
                   key={option.value}
@@ -101,14 +118,14 @@ export default function SettingsPanel({
                 <Volume2 className="w-5 h-5 text-green-600" />
               </div>
               <label className="text-elderly-lg font-semibold text-slate-700">
-                Tốc độ nói của Aura
+                {t.voiceSpeed}
               </label>
             </div>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { value: "slow", label: "Chậm 🐢" },
-                { value: "normal", label: "Bình thường" },
-                { value: "fast", label: "Nhanh 🐇" },
+                { value: "slow", label: t.voiceSlow },
+                { value: "normal", label: t.voiceNormal },
+                { value: "fast", label: t.voiceFast },
               ].map((option) => (
                 <button
                   key={option.value}
@@ -140,7 +157,7 @@ export default function SettingsPanel({
                 <Sun className="w-5 h-5 text-yellow-600" />
               </div>
               <label className="text-elderly-lg font-semibold text-slate-700">
-                Giao diện
+                {t.theme}
               </label>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -159,7 +176,7 @@ export default function SettingsPanel({
                 `}
               >
                 <Sun className="w-5 h-5" />
-                Sáng
+                {t.themeLight}
               </button>
               <button
                 onClick={() => onSettingsChange({ ...settings, theme: "dark" })}
@@ -174,7 +191,53 @@ export default function SettingsPanel({
                 `}
               >
                 <Moon className="w-5 h-5" />
-                Tối
+                {t.themeDark}
+              </button>
+            </div>
+          </div>
+
+          {/* Language Selector */}
+          <div className="bg-slate-50 rounded-2xl p-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                <Globe className="w-5 h-5 text-indigo-600" />
+              </div>
+              <label className="text-elderly-lg font-semibold text-slate-700">
+                {t.language}
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() =>
+                  onSettingsChange({ ...settings, language: "en" })
+                }
+                className={`
+                  py-4 px-3 rounded-xl text-elderly-base font-semibold transition-all
+                  flex items-center justify-center gap-2
+                  ${
+                    settings.language === "en"
+                      ? "bg-indigo-500 text-white"
+                      : "bg-white border-2 border-slate-200 text-slate-700 hover:border-indigo-300"
+                  }
+                `}
+              >
+                🇺🇸 {t.languageEnglish}
+              </button>
+              <button
+                onClick={() =>
+                  onSettingsChange({ ...settings, language: "vi" })
+                }
+                className={`
+                  py-4 px-3 rounded-xl text-elderly-base font-semibold transition-all
+                  flex items-center justify-center gap-2
+                  ${
+                    settings.language === "vi"
+                      ? "bg-indigo-500 text-white"
+                      : "bg-white border-2 border-slate-200 text-slate-700 hover:border-indigo-300"
+                  }
+                `}
+              >
+                🇻🇳 {t.languageVietnamese}
               </button>
             </div>
           </div>
@@ -186,15 +249,15 @@ export default function SettingsPanel({
                 <Phone className="w-5 h-5 text-red-600" />
               </div>
               <label className="text-elderly-lg font-semibold text-red-700">
-                Liên hệ khẩn cấp
+                {t.emergencyContact}
               </label>
             </div>
             <p className="text-elderly-sm text-red-600 mb-3">
-              Khi bạn nhấn nút SOS, người thân sẽ được thông báo ngay lập tức.
+              {t.emergencyContactInfo}
             </p>
             <div className="flex items-center gap-2 text-elderly-base text-red-700">
               <Heart className="w-5 h-5" />
-              <span>Người thân: 0912 345 678</span>
+              <span>{t.emergencyContactNumber}</span>
             </div>
           </div>
         </div>
@@ -211,7 +274,7 @@ export default function SettingsPanel({
               transition-all
             "
           >
-            Hoàn tất
+            {t.done}
           </button>
         </div>
       </div>

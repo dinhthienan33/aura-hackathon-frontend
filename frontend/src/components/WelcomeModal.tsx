@@ -2,14 +2,20 @@
 
 import { useState } from "react";
 import { WelcomeModalProps } from "@/types";
-import { Heart, Sparkles, Shield, MessageCircle } from "lucide-react";
+import { Heart, Sparkles, Shield, MessageCircle, Globe } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
-export default function WelcomeModal({ onClose }: WelcomeModalProps) {
+export default function WelcomeModal({
+  onClose,
+  language,
+  onLanguageChange,
+}: WelcomeModalProps) {
+  const t = useTranslation(language);
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
 
   const handleComplete = () => {
-    onClose(name || "Bạn");
+    onClose(name || (language === "vi" ? "Bạn" : "You"));
   };
 
   return (
@@ -23,13 +29,49 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
             </div>
 
             <h1 className="text-elderly-2xl font-bold text-slate-800 mb-4">
-              Xin chào!
+              {t.welcomeTitle}
             </h1>
-            <p className="text-elderly-lg text-slate-600 mb-8 leading-relaxed">
-              Chào mừng bạn đến với{" "}
-              <strong className="text-blue-600">Aura</strong> - người bạn đồng
-              hành luôn sẵn sàng lắng nghe và trò chuyện cùng bạn.
+            <p className="text-elderly-lg text-slate-600 mb-6 leading-relaxed">
+              {t.welcomeSubtitle}
             </p>
+
+            {/* Language Selector */}
+            <div className="mb-6">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Globe className="w-5 h-5 text-slate-600" />
+                <span className="text-base font-semibold text-slate-600">
+                  {language === "vi" ? "Chọn ngôn ngữ" : "Choose Language"}
+                </span>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => onLanguageChange("en")}
+                  className={`
+                    flex-1 py-3 px-4 rounded-xl text-base font-semibold transition-all
+                    ${
+                      language === "en"
+                        ? "bg-indigo-500 text-white shadow-lg"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }
+                  `}
+                >
+                  🇺🇸 English
+                </button>
+                <button
+                  onClick={() => onLanguageChange("vi")}
+                  className={`
+                    flex-1 py-3 px-4 rounded-xl text-base font-semibold transition-all
+                    ${
+                      language === "vi"
+                        ? "bg-indigo-500 text-white shadow-lg"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }
+                  `}
+                >
+                  🇻🇳 Tiếng Việt
+                </button>
+              </div>
+            </div>
 
             <button
               onClick={() => setStep(2)}
@@ -43,7 +85,7 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
                 shadow-lg hover:shadow-xl
               "
             >
-              Bắt đầu nào ✨
+              {t.getStarted}
             </button>
           </div>
         )}
@@ -51,7 +93,7 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
         {step === 2 && (
           <div className="p-8">
             <h2 className="text-elderly-xl font-bold text-slate-800 mb-6 text-center">
-              Aura có thể giúp bạn
+              {t.whatCanAuraDo}
             </h2>
 
             <div className="space-y-4 mb-8">
@@ -61,10 +103,10 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
                 </div>
                 <div>
                   <h3 className="text-elderly-lg font-semibold text-slate-800">
-                    Trò chuyện thân thiện
+                    {t.feature1Title}
                   </h3>
                   <p className="text-elderly-sm text-slate-600">
-                    Aura luôn sẵn sàng lắng nghe câu chuyện của bạn
+                    {t.feature1Desc}
                   </p>
                 </div>
               </div>
@@ -75,10 +117,10 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
                 </div>
                 <div>
                   <h3 className="text-elderly-lg font-semibold text-slate-800">
-                    Ghi nhớ kỷ niệm
+                    {t.feature2Title}
                   </h3>
                   <p className="text-elderly-sm text-slate-600">
-                    Aura nhớ những gì bạn kể và sẽ hỏi thăm
+                    {t.feature2Desc}
                   </p>
                 </div>
               </div>
@@ -89,10 +131,10 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
                 </div>
                 <div>
                   <h3 className="text-elderly-lg font-semibold text-slate-800">
-                    Luôn bên bạn
+                    {t.feature3Title}
                   </h3>
                   <p className="text-elderly-sm text-slate-600">
-                    Nhấn SOS khi cần, Aura sẽ gọi người thân giúp bạn
+                    {t.feature3Desc}
                   </p>
                 </div>
               </div>
@@ -109,7 +151,7 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
                 transition-all
               "
             >
-              Tiếp tục →
+              {t.continue}
             </button>
           </div>
         )}
@@ -121,17 +163,19 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
             </div>
 
             <h2 className="text-elderly-xl font-bold text-slate-800 mb-4">
-              Bạn tên gì ạ?
+              {t.whatsYourName}
             </h2>
             <p className="text-elderly-base text-slate-600 mb-6">
-              Aura muốn được gọi bạn bằng tên thân mật
+              {t.namePrompt}
             </p>
 
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Nhập tên của bạn"
+              placeholder={
+                language === "vi" ? "Nhập tên của bạn" : "Enter your name"
+              }
               className="
                 w-full px-6 py-5
                 text-elderly-lg text-center
@@ -155,7 +199,7 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
                   transition-all
                 "
               >
-                ← Quay lại
+                {t.back}
               </button>
               <button
                 onClick={handleComplete}
@@ -168,7 +212,7 @@ export default function WelcomeModal({ onClose }: WelcomeModalProps) {
                   transition-all
                 "
               >
-                Bắt đầu! 🎉
+                {t.startNow}
               </button>
             </div>
           </div>
