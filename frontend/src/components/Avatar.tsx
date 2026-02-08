@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { AvatarProps } from "@/types";
+import { Headphones, MessageCircle, Volume2, Smile } from "lucide-react";
 
 export default function Avatar({
   state,
@@ -10,6 +12,7 @@ export default function Avatar({
 }: AvatarProps) {
   const [mouthOpen, setMouthOpen] = useState(false);
   const [eyesClosed, setEyesClosed] = useState(false);
+  const [headTilt, setHeadTilt] = useState(0);
 
   // Lip sync animation when speaking
   useEffect(() => {
@@ -34,61 +37,112 @@ export default function Avatar({
     return () => clearInterval(interval);
   }, []);
 
-  // Get state-specific styling
+  // Head tilt when listening (showing attention)
+  useEffect(() => {
+    if (isListening) {
+      setHeadTilt(-5);
+    } else {
+      setHeadTilt(0);
+    }
+  }, [isListening]);
+
+  // Get state-specific styling with warm colors
   const getStateStyle = () => {
     switch (state) {
       case "listening":
-        return "ring-4 ring-blue-400 ring-opacity-60";
+        return "ring-4 ring-sage-400 ring-opacity-60";
       case "thinking":
-        return "ring-4 ring-purple-400 ring-opacity-60";
+        return "ring-4 ring-aura-accent ring-opacity-60";
       case "speaking":
-        return "ring-4 ring-green-400 ring-opacity-60";
+        return "ring-4 ring-sage-500 ring-opacity-60";
       default:
         return "";
     }
   };
 
-  // Get state label
+  // Get state label in Vietnamese with icon
   const getStateLabel = () => {
     switch (state) {
       case "listening":
-        return "🎧 Đang lắng nghe...";
+        return (
+          <span className="flex items-center gap-2">
+            <Headphones className="w-5 h-5" />
+            Đang lắng nghe...
+          </span>
+        );
       case "thinking":
-        return "💭 Đang suy nghĩ...";
+        return (
+          <span className="flex items-center gap-2">
+            <MessageCircle className="w-5 h-5" />
+            Đang suy nghĩ...
+          </span>
+        );
       case "speaking":
-        return "💬 Đang nói...";
+        return (
+          <span className="flex items-center gap-2">
+            <Volume2 className="w-5 h-5" />
+            Đang nói...
+          </span>
+        );
       default:
-        return "😊 Sẵn sàng trò chuyện";
+        return (
+          <span className="flex items-center gap-2">
+            <Smile className="w-5 h-5" />
+            Sẵn sàng trò chuyện
+          </span>
+        );
+    }
+  };
+
+  // Get state color
+  const getStateBgColor = () => {
+    switch (state) {
+      case "listening":
+        return "bg-sage-100 text-sage-700";
+      case "thinking":
+        return "bg-amber-100 text-amber-700";
+      case "speaking":
+        return "bg-sage-200 text-sage-800";
+      default:
+        return "bg-cream-200 text-navy-700";
     }
   };
 
   return (
     <div className="flex flex-col items-center">
-      {/* Avatar Container */}
-      <div
+      {/* Avatar Container with warm glow */}
+      <motion.div
+        animate={{ rotate: headTilt }}
+        transition={{ type: "spring", stiffness: 200, damping: 20 }}
         className={`
           relative w-64 h-64 md:w-80 md:h-80 
           rounded-full overflow-hidden 
-          bg-gradient-to-br from-blue-100 to-purple-100 
-          shadow-2xl avatar-glow
+          bg-gradient-to-br from-cream-100 to-sage-100 
+          shadow-2xl
           transition-all duration-300
           ${getStateStyle()}
           ${state === "idle" ? "animate-breathe" : ""}
         `}
+        style={{
+          boxShadow: `
+            0 0 60px rgba(74, 124, 89, 0.2),
+            0 0 100px rgba(212, 165, 116, 0.15)
+          `,
+        }}
       >
-        {/* SVG Avatar */}
+        {/* SVG Avatar with warmer tones */}
         <svg
           viewBox="0 0 200 200"
           className="w-full h-full"
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* Background Circle */}
-          <circle cx="100" cy="100" r="98" fill="url(#bgGradient)" />
+          {/* Background Circle - Warm gradient */}
+          <circle cx="100" cy="100" r="98" fill="url(#warmBgGradient)" />
 
-          {/* Face Base */}
-          <ellipse cx="100" cy="110" rx="70" ry="75" fill="#FFE4C4" />
+          {/* Face Base - Warm skin tone */}
+          <ellipse cx="100" cy="110" rx="70" ry="75" fill="#FFDFC4" />
 
-          {/* Hair */}
+          {/* Hair - Warm brown */}
           <path
             d="M30 90 Q30 30, 100 25 Q170 30, 170 90 Q165 70, 140 65 Q120 60, 100 60 Q80 60, 60 65 Q35 70, 30 90"
             fill="#8B7355"
@@ -142,7 +196,7 @@ export default function Avatar({
             )}
           </g>
 
-          {/* Eyebrows */}
+          {/* Eyebrows - Warm brown */}
           <path
             d="M50 78 Q65 72, 80 78"
             stroke="#6B5344"
@@ -163,12 +217,12 @@ export default function Avatar({
           {/* Nose */}
           <path
             d="M100 105 Q95 120, 100 130 Q105 130, 105 125"
-            stroke="#DEB887"
+            stroke="#E5B89A"
             strokeWidth="2"
             fill="none"
           />
 
-          {/* Mouth */}
+          {/* Mouth - Warm coral color */}
           <g transform="translate(100, 150)">
             {isSpeaking ? (
               // Speaking mouth - animated
@@ -177,14 +231,14 @@ export default function Avatar({
                 cy="0"
                 rx="15"
                 ry={mouthOpen ? 12 : 5}
-                fill="#D2691E"
+                fill="#D4837A"
                 className="transition-all duration-100"
               />
             ) : (
-              // Smiling mouth
+              // Warm smiling mouth
               <path
-                d="M-20 0 Q0 15, 20 0"
-                stroke="#D2691E"
+                d="M-20 0 Q0 18, 20 0"
+                stroke="#D4837A"
                 strokeWidth="4"
                 fill="none"
                 strokeLinecap="round"
@@ -192,12 +246,12 @@ export default function Avatar({
             )}
           </g>
 
-          {/* Blush */}
-          <circle cx="55" cy="125" r="12" fill="#FFB6C1" opacity="0.5" />
-          <circle cx="145" cy="125" r="12" fill="#FFB6C1" opacity="0.5" />
+          {/* Warm blush */}
+          <circle cx="55" cy="125" r="14" fill="#FFB8A8" opacity="0.4" />
+          <circle cx="145" cy="125" r="14" fill="#FFB8A8" opacity="0.4" />
 
-          {/* Glasses (optional elderly feature) */}
-          <g stroke="#4A4A4A" strokeWidth="2" fill="none">
+          {/* Glasses with warm frame */}
+          <g stroke="#5D4E37" strokeWidth="2" fill="none">
             <circle cx="65" cy="95" r="20" />
             <circle cx="135" cy="95" r="20" />
             <path d="M85 95 L115 95" />
@@ -207,57 +261,76 @@ export default function Avatar({
 
           {/* Gradient Definitions */}
           <defs>
-            <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#E0F2FE" />
-              <stop offset="100%" stopColor="#F3E8FF" />
+            <linearGradient id="warmBgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#FDF8F3" />
+              <stop offset="50%" stopColor="#F4F7F2" />
+              <stop offset="100%" stopColor="#E8EFE4" />
             </linearGradient>
           </defs>
         </svg>
 
-        {/* Listening Animation Overlay */}
-        {isListening && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="absolute w-full h-full border-4 border-blue-400 rounded-full animate-ping opacity-30" />
-          </div>
+        {/* Voice Visualizer Ring - Active when speaking/listening */}
+        {(isListening || isSpeaking) && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="absolute inset-0 pointer-events-none"
+          >
+            <div className="absolute inset-0 rounded-full border-4 border-sage-400 opacity-30 animate-ping" />
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                boxShadow: `
+                  0 0 40px rgba(74, 124, 89, 0.4),
+                  0 0 80px rgba(74, 124, 89, 0.2)
+                `,
+              }}
+            />
+          </motion.div>
         )}
 
         {/* Thinking Animation Overlay */}
         {state === "thinking" && (
           <div className="absolute top-4 right-4">
             <div className="flex space-x-1">
-              <div
-                className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"
-                style={{ animationDelay: "0ms" }}
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
+                className="w-3 h-3 bg-aura-accent rounded-full"
               />
-              <div
-                className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"
-                style={{ animationDelay: "150ms" }}
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ repeat: Infinity, duration: 0.6, delay: 0.15 }}
+                className="w-3 h-3 bg-aura-accent rounded-full"
               />
-              <div
-                className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"
-                style={{ animationDelay: "300ms" }}
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ repeat: Infinity, duration: 0.6, delay: 0.3 }}
+                className="w-3 h-3 bg-aura-accent rounded-full"
               />
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Avatar Name */}
-      <h2 className="mt-6 text-elderly-2xl font-bold text-slate-700">Aura</h2>
+      <h2 className="mt-6 text-elderly-2xl font-display font-bold text-navy-800">
+        Aura
+      </h2>
 
-      {/* Status Label */}
-      <p
+      {/* Status Label with warm colors */}
+      <motion.p
+        key={state}
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
         className={`
-        mt-2 text-elderly-lg px-6 py-2 rounded-full
-        transition-all duration-300
-        ${state === "listening" ? "bg-blue-100 text-blue-700" : ""}
-        ${state === "thinking" ? "bg-purple-100 text-purple-700" : ""}
-        ${state === "speaking" ? "bg-green-100 text-green-700" : ""}
-        ${state === "idle" ? "bg-slate-100 text-slate-600" : ""}
-      `}
+          mt-2 text-elderly-lg px-6 py-2 rounded-warm-lg
+          transition-all duration-300
+          ${getStateBgColor()}
+        `}
       >
         {getStateLabel()}
-      </p>
+      </motion.p>
     </div>
   );
 }

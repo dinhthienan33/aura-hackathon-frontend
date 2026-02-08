@@ -57,11 +57,7 @@ export default function SOSButton({ onClick, language }: SOSButtonProps) {
           hover:scale-110
           sos-pulse
         "
-        aria-label={
-          t.sosButton +
-          " - " +
-          (language === "vi" ? "Gọi trợ giúp khẩn cấp" : "Emergency call")
-        }
+        aria-label={t.sosButton + " - " + t.sosEmergency}
       >
         <Phone className="w-8 h-8 md:w-10 md:h-10 mb-1" />
         <span className="text-sm md:text-base font-bold">{t.sosButton}</span>
@@ -85,7 +81,7 @@ export default function SOSButton({ onClick, language }: SOSButtonProps) {
 
             <p className="text-elderly-base text-center text-slate-600 mb-6">
               {isActivated
-                ? `${t.sosCallingMessage} ${countdown} ${language === "vi" ? "giây" : "seconds"}...`
+                ? `${t.sosCallingMessage} ${countdown} ${t.seconds}...`
                 : t.sosConfirmMessage}
             </p>
 

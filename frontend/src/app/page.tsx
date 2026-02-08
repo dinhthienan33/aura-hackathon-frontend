@@ -1,319 +1,154 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import Avatar from "@/components/Avatar";
-import ChatInterface from "@/components/ChatInterface";
-import SOSButton from "@/components/SOSButton";
-import VoiceButton from "@/components/VoiceButton";
-import StatusBar from "@/components/StatusBar";
-import SettingsPanel from "@/components/SettingsPanel";
-import WelcomeModal from "@/components/WelcomeModal";
-import { Message, AuraState, Settings } from "@/types";
-import { getTTS, TextToSpeech } from "@/lib/tts";
-import { useTranslation } from "@/lib/i18n";
+import { useState } from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { MessageCircle, Users, Book, Heart, Phone, Settings, Sparkles } from "lucide-react";
+import { useTranslation, Language } from "@/lib/i18n";
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(true);
-  const [currentTranscript, setCurrentTranscript] = useState("");
-  const [auraState, setAuraState] = useState<AuraState>("idle");
-  const [settings, setSettings] = useState<Settings>({
-    userName: "You",
-    fontSize: "large",
-    voiceSpeed: "normal",
-    theme: "light",
-    language: "en",
-  });
+  const [language] = useState<Language>("en");
+  const t = useTranslation(language);
 
-  const t = useTranslation(settings.language);
-  const ttsRef = useRef<TextToSpeech | null>(null);
-
-  // Simulate connection status
-  useEffect(() => {
-    const timer = setTimeout(() => setIsConnected(true), 1500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Initialize TTS
-  useEffect(() => {
-    ttsRef.current = getTTS();
-
-    // Cleanup on unmount
-    return () => {
-      if (ttsRef.current) {
-        ttsRef.current.stop();
-      }
-    };
-  }, []);
-
-  // Helper function to speak Aura's message
-  const speakMessage = useCallback(
-    async (text: string) => {
-      if (!ttsRef.current) return;
-
-      setIsSpeaking(true);
-      setAuraState("speaking");
-
-      try {
-        const rate = TextToSpeech.getRateFromSetting(settings.voiceSpeed);
-        const lang = settings.language === "vi" ? "vi-VN" : "en-US";
-
-        await ttsRef.current.speak(text, {
-          rate,
-          lang,
-          onEnd: () => {
-            setIsSpeaking(false);
-            setAuraState("idle");
-          },
-        });
-      } catch (error) {
-        console.error("[App] TTS error:", error);
-        setIsSpeaking(false);
-        setAuraState("idle");
-      }
+  const navItems = [
+    {
+      href: "/chat",
+      icon: MessageCircle,
+      title: t.homeChatTitle,
+      description: t.homeChatDesc,
+      color: "bg-sage-500",
+      hoverColor: "hover:bg-sage-600",
     },
-    [settings.voiceSpeed, settings.language],
-  );
-
-  // Add welcome message from Aura
-  useEffect(() => {
-    if (!showWelcome && messages.length === 0) {
-      const welcomeMessage: Message = {
-        id: "1",
-        text: t.welcomeMessage.replace("{{userName}}", settings.userName),
-        sender: "aura",
-        timestamp: new Date(),
-      };
-      setMessages([welcomeMessage]);
-
-      // Speak welcome message
-      setTimeout(() => {
-        speakMessage(welcomeMessage.text);
-      }, 500);
-    }
-  }, [showWelcome, settings.userName, t, speakMessage]);
-
-  const handleSendMessage = useCallback(
-    (text: string) => {
-      if (!text.trim()) return;
-
-      // Add user message
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        text: text.trim(),
-        sender: "user",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, userMessage]);
-      setAuraState("thinking");
-
-      // Simulate Aura's response (will be replaced with actual API call)
-      setTimeout(() => {
-        const responses = [
-          t.response1.replace("{{userName}}", settings.userName),
-          t.response2.replace("{{userName}}", settings.userName),
-          t.response3.replace("{{userName}}", settings.userName),
-          t.response4.replace("{{userName}}", settings.userName),
-        ];
-        const randomResponse =
-          responses[Math.floor(Math.random() * responses.length)];
-
-        const auraMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text: randomResponse,
-          sender: "aura",
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, auraMessage]);
-
-        // Speak the response
-        setTimeout(() => {
-          speakMessage(randomResponse);
-        }, 300);
-      }, 1500);
+    {
+      href: "/agents",
+      icon: Users,
+      title: "My Agents",
+      description: "Manage and talk to your AI companions",
+      color: "bg-navy-700",
+      hoverColor: "hover:bg-navy-800",
     },
-    [settings.userName, speakMessage],
-  );
-
-  const handleVoiceStart = useCallback(() => {
-    setIsListening(true);
-    setAuraState("listening");
-    setCurrentTranscript("");
-  }, []);
-
-  const handleVoiceEnd = useCallback(
-    (transcript: string) => {
-      setIsListening(false);
-      setCurrentTranscript("");
-      if (transcript) {
-        handleSendMessage(transcript);
-      } else {
-        setAuraState("idle");
-      }
+    {
+      href: "/memory",
+      icon: Book,
+      title: t.homeMemoryTitle,
+      description: t.homeMemoryDesc,
+      color: "bg-aura-accent",
+      hoverColor: "hover:bg-amber-600",
     },
-    [handleSendMessage],
-  );
-
-  const handleVoiceTranscript = useCallback((transcript: string) => {
-    setCurrentTranscript(transcript);
-  }, []);
-
-  const handleSOSClick = useCallback(() => {
-    // Stop any ongoing speech
-    if (ttsRef.current) {
-      ttsRef.current.stop();
-    }
-
-    const sosMessage: Message = {
-      id: Date.now().toString(),
-      text: t.sosEmergency,
-      sender: "system",
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, sosMessage]);
-
-    setTimeout(() => {
-      const responseText = t.sosResponse.replace(
-        "{{userName}}",
-        settings.userName,
-      );
-      const auraResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: responseText,
-        sender: "aura",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, auraResponse]);
-
-      // Speak SOS response
-      setTimeout(() => {
-        speakMessage(responseText);
-      }, 300);
-    }, 500);
-  }, [settings.userName, t, speakMessage]);
-
-  const handleCloseWelcome = useCallback((name: string) => {
-    setSettings((prev) => ({ ...prev, userName: name }));
-    setShowWelcome(false);
-  }, []);
-
-  const handleLanguageChange = useCallback((language: "en" | "vi") => {
-    setSettings((prev) => ({ ...prev, language }));
-  }, []);
+    {
+      href: "/profile",
+      icon: Heart,
+      title: t.homeProfileTitle,
+      description: t.homeProfileDesc,
+      color: "bg-rose-500",
+      hoverColor: "hover:bg-rose-600",
+    },
+  ];
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
-      {/* Welcome Modal */}
-      {showWelcome && (
-        <WelcomeModal
-          onClose={handleCloseWelcome}
-          language={settings.language}
-          onLanguageChange={handleLanguageChange}
-        />
-      )}
-
-      {/* Header/Navbar */}
-      <StatusBar
-        isConnected={isConnected}
-        onSettingsClick={() => setShowSettings(true)}
-        language={settings.language}
-      />
-
-      {/* Hero Section - giới thiệu ngắn */}
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-6 px-4">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-2xl md:text-3xl font-bold mb-2">
-            {t.welcome.replace("{{userName}}", settings.userName)} 👋
-          </h2>
-          <p className="text-lg text-blue-100">{t.heroSubtitle}</p>
-        </div>
-      </section>
-
-      {/* Main Content */}
-      <div className="flex-1 py-8 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Avatar Section - Card */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-3xl shadow-xl p-6 sticky top-32">
-                <h3 className="text-xl font-bold text-slate-700 mb-4 text-center">
-                  {t.virtualAssistant}
-                </h3>
-
-                <div className="flex flex-col items-center">
-                  <Avatar
-                    state={auraState}
-                    isSpeaking={isSpeaking}
-                    isListening={isListening}
-                  />
-
-                  {/* Voice Button */}
-                  <div className="mt-6">
-                    <VoiceButton
-                      onVoiceStart={handleVoiceStart}
-                      onVoiceEnd={handleVoiceEnd}
-                      onTranscript={handleVoiceTranscript}
-                      isListening={isListening}
-                      disabled={!isConnected}
-                      language={settings.language}
-                    />
-                  </div>
-
-                  {/* Current Transcript Display */}
-                  {currentTranscript && (
-                    <div className="mt-4 p-4 bg-blue-50 rounded-2xl w-full">
-                      <p className="text-base text-slate-600 italic text-center">
-                        "{currentTranscript}..."
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Chat Section */}
-            <div className="lg:col-span-2">
-              <ChatInterface
-                messages={messages}
-                onSendMessage={handleSendMessage}
-                isTyping={auraState === "thinking"}
-                userName={settings.userName}
-                language={settings.language}
-              />
-            </div>
+    <main className="min-h-screen flex flex-col items-center justify-center p-6 md:p-12 bg-gradient-to-br from-cream-50 via-cream-100 to-cream-200">
+      {/* Hero Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="text-center mb-12"
+      >
+        {/* Logo/Brand */}
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="mb-6"
+        >
+          <div className="w-32 h-32 md:w-40 md:h-40 mx-auto rounded-full bg-gradient-to-br from-sage-400 to-sage-600 flex items-center justify-center shadow-2xl avatar-glow">
+            <Sparkles className="w-16 h-16 md:w-20 md:h-20 text-white" strokeWidth={1.5} />
           </div>
-        </div>
-      </div>
+        </motion.div>
+
+        <h1 className="font-display text-elderly-4xl md:text-6xl font-bold text-navy-900 mb-4">
+          {t.appName.toUpperCase()}
+        </h1>
+        <p className="text-elderly-lg md:text-elderly-xl text-navy-700 max-w-lg mx-auto leading-relaxed whitespace-pre-line">
+          {t.appDescription.split(" AI ")[0]} AI <br className="hidden md:inline" />
+          <span className="text-sage-600 font-semibold">{t.ready}</span>
+        </p>
+      </motion.div>
+
+      {/* Navigation Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.6 }}
+        className="grid grid-cols-2 gap-4 md:gap-6 w-full max-w-2xl"
+      >
+        {navItems.map((item, index) => (
+          <motion.div
+            key={item.href}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5 + index * 0.1, duration: 0.4 }}
+          >
+            <Link
+              href={item.href}
+              className={`
+                block p-6 md:p-8 rounded-warm-xl
+                ${item.color} ${item.hoverColor}
+                text-white
+                transition-all duration-300
+                hover:scale-105 hover:shadow-2xl
+                active:scale-98
+                card-warm
+              `}
+            >
+              <item.icon className="w-10 h-10 md:w-12 md:h-12 mb-4" />
+              <h2 className="font-display text-elderly-xl md:text-elderly-2xl font-bold mb-1">
+                {item.title}
+              </h2>
+              <p className="text-elderly-sm opacity-90 hidden md:block">
+                {item.description}
+              </p>
+            </Link>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {/* Quick Actions */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.9, duration: 0.5 }}
+        className="mt-10 flex gap-4"
+      >
+        <Link
+          href="/agent-config"
+          className="flex items-center gap-2 px-6 py-3 rounded-warm-lg bg-warmGray-100 text-navy-700 hover:bg-warmGray-200 transition-all duration-200 text-elderly-base"
+        >
+          <Settings className="w-5 h-5" />
+          <span>{t.configLabel}</span>
+        </Link>
+      </motion.div>
+
+      {/* Emergency SOS - Fixed Position */}
+      <Link
+        href="tel:115"
+        className="fixed bottom-6 right-6 z-50 w-20 h-20 md:w-24 md:h-24 rounded-full bg-aura-danger text-white flex flex-col items-center justify-center shadow-2xl sos-pulse hover:scale-110 transition-transform"
+      >
+        <Phone className="w-8 h-8 md:w-10 md:h-10" />
+        <span className="text-sm font-bold mt-1">{t.sosButton}</span>
+      </Link>
 
       {/* Footer */}
-      <footer className="bg-slate-800 text-white py-6 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🌟</span>
-            <span className="font-bold text-lg">{t.appName}</span>
-            <span className="text-slate-400">|</span>
-            <span className="text-slate-300">{t.appDescription}</span>
-          </div>
-          <div className="text-slate-400 text-sm">{t.footerCopyright}</div>
-        </div>
-      </footer>
-
-      {/* SOS Button - Always visible */}
-      <SOSButton onClick={handleSOSClick} language={settings.language} />
-
-      {/* Settings Panel */}
-      {showSettings && (
-        <SettingsPanel
-          settings={settings}
-          onSettingsChange={setSettings}
-          onClose={() => setShowSettings(false)}
-          language={settings.language}
-        />
-      )}
+      <motion.footer
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1, duration: 0.5 }}
+        className="mt-12 text-center text-warmGray-500 text-elderly-sm"
+      >
+        <p className="flex items-center justify-center gap-2">
+          {t.designedForElderly}
+        </p>
+      </motion.footer>
     </main>
   );
 }
