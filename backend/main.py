@@ -5,9 +5,8 @@ from api.router import api_router
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
-# CORS config
 origins = [
-    "*", # Allow all for hackathon convenience
+    "*", 
 ]
 
 app.add_middleware(
@@ -22,8 +21,8 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Aura Hackathon Backend"}
+    return {"message": "Welcome to AURA Hackathon Service"}
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host=settings.HOST, port=settings.PORT, reload=True)
+    uvicorn.run("main:app", host=settings.HOST, port=settings.PORT)

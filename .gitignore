@@ -42,3 +42,5 @@ Thumbs.db
 backend/data
 compiled
 # backend-node/uploads
+.agent/
+tests/

@@ -1,7 +1,7 @@
 {
-  "name": "Aura - Người Bạn Đồng Hành",
-  "short_name": "Aura",
-  "description": "Aura là người bạn AI thân thiện, luôn sẵn sàng trò chuyện và hỗ trợ bạn mọi lúc.",
+  "name": "AURA - Người Bạn Đồng Hành",
+  "short_name": "AURA",
+  "description": "AURA là người bạn AI thân thiện, luôn sẵn sàng trò chuyện và hỗ trợ bạn mọi lúc.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8fafc",

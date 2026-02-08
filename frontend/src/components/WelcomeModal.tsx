@@ -15,7 +15,7 @@ export default function WelcomeModal({
   const [name, setName] = useState("");
 
   const handleComplete = () => {
-    onClose(name || (language === "vi" ? "Bạn" : "You"));
+    onClose(name || t.defaultName);
   };
 
   return (
@@ -35,12 +35,10 @@ export default function WelcomeModal({
               {t.welcomeSubtitle}
             </p>
 
-            {/* Language Selector */}
-            <div className="mb-6">
               <div className="flex items-center justify-center gap-2 mb-3">
                 <Globe className="w-5 h-5 text-slate-600" />
                 <span className="text-base font-semibold text-slate-600">
-                  {language === "vi" ? "Chọn ngôn ngữ" : "Choose Language"}
+                  {t.chooseLanguage}
                 </span>
               </div>
               <div className="flex gap-3">
@@ -173,9 +171,7 @@ export default function WelcomeModal({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={
-                language === "vi" ? "Nhập tên của bạn" : "Enter your name"
-              }
+              placeholder={t.userNamePlaceholder}
               className="
                 w-full px-6 py-5
                 text-elderly-lg text-center

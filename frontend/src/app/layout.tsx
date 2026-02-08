@@ -1,15 +1,30 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, Lexend } from "next/font/google";
 import "./globals.css";
 
+// Inter for body text - optimized for readability
+const inter = Inter({
+  subsets: ["latin", "vietnamese"],
+  display: "swap",
+  variable: "--font-inter",
+});
+
+// Lexend for display/headings - designed for reading ease
+const lexend = Lexend({
+  subsets: ["latin", "vietnamese"],
+  display: "swap",
+  variable: "--font-lexend",
+});
+
 export const metadata: Metadata = {
-  title: "Aura - Người Bạn Đồng Hành Của Bạn",
+  title: "AURA - Your AI Companion",
   description:
-    "Aura là người bạn AI thân thiện, luôn sẵn sàng trò chuyện và hỗ trợ bạn mọi lúc.",
+    "AURA is a friendly AI companion, always ready to chat and support you at any time.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Aura",
+    title: "AURA",
   },
   formatDetection: {
     telephone: true,
@@ -21,7 +36,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#2563eb",
+  themeColor: "#4A7C59", // Sage green - new brand color
 };
 
 export default function RootLayout({
@@ -30,11 +45,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi">
+    <html lang="en" className={`${inter.variable} ${lexend.variable}`}>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased font-sans">{children}</body>
     </html>
   );
 }
+

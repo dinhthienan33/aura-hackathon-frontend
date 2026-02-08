@@ -1,38 +1,35 @@
-from groq import Groq
+from openai import AsyncOpenAI
 import os
 import tempfile
 from config.settings import settings
 
 class STTService:
     def __init__(self):
-        if not settings.GROQ_API_KEY:
-            print("WARNING: GROQ_API_KEY is not set. STT will fail.")
+        if not settings.OPENAI_API_KEY:
+            print("WARNING: OPENAI_API_KEY is not set. STT will fail.")
             self.client = None
         else:
-            self.client = Groq(api_key=settings.GROQ_API_KEY)
+            self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         
-        self.model = "whisper-large-v3"
+        self.model = "whisper-1"
 
     async def transcribe(self, audio_data: bytes) -> str:
         if not self.client:
-            print("STT Service Error: No Groq API Key provided.")
+            print("STT Service Error: No OPENAI_API_KEY provided.")
             return "Lỗi cấu hình STT"
 
-        print(f"STT Service (Groq) received {len(audio_data)} bytes of audio")
+        print(f"STT Service (OpenAI) received {len(audio_data)} bytes of audio")
         
-        # Groq API requires a file-like object with a name, or a path
-        # We will write to a temp file to be safe and simple
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp_file:
             tmp_file.write(audio_data)
             tmp_path = tmp_file.name
             
         try:
             with open(tmp_path, "rb") as file_obj:
-                transcription = self.client.audio.transcriptions.create(
-                    file=(tmp_path, file_obj.read()),
+                transcription = await self.client.audio.transcriptions.create(
+                    file=file_obj,
                     model=self.model,
-                    # Optional: prompt="Context about elderly care", language="vi"
-                    response_format="json",
+                    language="en", 
                     temperature=0.0
                 )
                 
@@ -41,10 +38,13 @@ class STTService:
             return text
             
         except Exception as e:
-            print(f"STT Error (Groq): {e}")
-            return "Xin chào (lỗi API)"
+            print(f"STT Error (OpenAI): {e}")
+            return ""
         finally:
             if os.path.exists(tmp_path):
-                os.remove(tmp_path)
+                try:
+                    os.remove(tmp_path)
+                except:
+                    pass
 
 stt_service = STTService()

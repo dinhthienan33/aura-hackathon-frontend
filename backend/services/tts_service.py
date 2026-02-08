@@ -1,48 +1,32 @@
-import edge_tts
-import asyncio
-import tempfile
-import os
-import uuid
+from openai import AsyncOpenAI
+from config.settings import settings
 
 class TTSService:
     def __init__(self):
-        # Voice options: en-US-AriaNeural, en-US-GuyNeural, vi-VN-HoaiMyNeural, vi-VN-NamMinhNeural
-        self.voice = "vi-VN-HoaiMyNeural" 
-        self.rate = "+0%"
-        self.volume = "+0%"
+        if not settings.OPENAI_API_KEY:
+             print("WARNING: OPENAI_API_KEY is not set. TTS will fail.")
+             self.client = None
+        else:
+             self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+             
+        self.model = "tts-1"
+        self.voice = "alloy" # Options: alloy, echo, fable, onyx, nova, shimmer
 
     async def speak(self, text: str) -> bytes:
-        print(f"TTS Service speaking: {text}")
-        
-        # Create a temporary file path
-        # Using manual path generation to avoid Windows file locking issues with NamedTemporaryFile
-        filename = f"tts_{uuid.uuid4()}.mp3"
-        tmp_path = os.path.join(tempfile.gettempdir(), filename)
-
-        try:
-            communicate = edge_tts.Communicate(text, self.voice, rate=self.rate, volume=self.volume)
-            await communicate.save(tmp_path)
-            
-            # Check file size
-            if os.path.exists(tmp_path):
-                file_size = os.path.getsize(tmp_path)
-                print(f"Generated TTS file at {tmp_path}, size: {file_size} bytes")
-            else:
-                print(f"Error: TTS file not found at {tmp_path}")
-                return b""
-
-            with open(tmp_path, "rb") as f:
-                audio_data = f.read()
-                
-            return audio_data
-        except Exception as e:
-            print(f"Error in TTS generation: {e}")
+        if not self.client:
             return b""
-        finally:
-            if os.path.exists(tmp_path):
-                try:
-                    os.remove(tmp_path)
-                except Exception as cleanup_error:
-                    print(f"Warning: Could not remove temp file {tmp_path}: {cleanup_error}")
+            
+        print(f"TTS Service (OpenAI) speaking: {text}")
+        
+        try:
+            response = await self.client.audio.speech.create(
+                model=self.model,
+                voice=self.voice,
+                input=text
+            )
+            return response.content
+        except Exception as e:
+            print(f"TTS Error (OpenAI): {e}")
+            return b""
 
 tts_service = TTSService()

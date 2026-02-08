@@ -5,7 +5,7 @@ import json
 import base64
 
 async def test_latency():
-    uri = "ws://localhost:8000/api/v1/ws"
+    uri = "ws://localhost:8089/ws"
     async with websockets.connect(uri) as websocket:
         print("Connected to WebSocket Server")
         

@@ -1,22 +1,28 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from services.stt_service import stt_service
-from services.llm_service import llm_service
-from services.tts_service import tts_service
-import asyncio
 import json
-
+import asyncio
+import os
+import websockets
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from services.agent_service import agent_service
+from services.conversation_orchestrator import conversation_orchestrator
+from config.settings import settings
 router = APIRouter()
+
+OPENAI_API_KEY = settings.OPENAI_API_KEY
+REALTIME_MODEL = settings.REALTIME_MODEL  
+REALTIME_URL = settings.REALTIME_URL + "?model=" + REALTIME_MODEL
+CALL_LANG = settings.CALL_LANG
 
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
-
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
         self.active_connections.append(websocket)
 
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
 
     async def send_text(self, message: str, websocket: WebSocket):
         await websocket.send_text(message)
@@ -27,100 +33,92 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 @router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket, agent_id: str = Query(None)):
     await manager.connect(websocket)
+    
+    current_agent = None
+    if agent_id:
+        current_agent = agent_service.get_agent(agent_id)
+        print(f"WS Connected. Agent: {current_agent.name if current_agent else 'None'} ({agent_id})")
+
     try:
         while True:
-            # Wait for message from client
-            # We expect audio bytes (blob) or text (json)
-            # For simplicity, let's assume client sends:
-            # 1. Text control messages
-            # 2. Binary audio data
-            
             message = await websocket.receive()
+            
+            flow = None
             
             if "text" in message:
                 data_text = message["text"]
-                # Handle text control if needed
                 print(f"Received text: {data_text}")
-                await manager.send_text(f"Server received: {data_text}", websocket)
+                flow = conversation_orchestrator.process_text_flow(data_text, current_agent)
                 
             elif "bytes" in message:
                 audio_data = message["bytes"]
-                print(f"Received {len(audio_data)} bytes of audio")
-                
-                # 1. STT
-                transcript = await stt_service.transcribe(audio_data)
-                await manager.send_text(json.dumps({"type": "transcript", "content": transcript}), websocket)
-                
-                # 2. LLM
-                response_text = await llm_service.process(transcript)
-                await manager.send_text(json.dumps({"type": "llm_response", "content": response_text}), websocket)
-                
-                # 3. TTS
-                audio_response = await tts_service.speak(response_text)
-                await manager.send_bytes(audio_response, websocket)
-                
+                print(f"Received audio: {len(audio_data)} bytes")
+                flow = conversation_orchestrator.process_audio_flow(audio_data, current_agent)
+            
+            if flow:
+                async for result in flow:
+                    if result["type"] == "audio":
+                        await manager.send_bytes(result["content"], websocket)
+                    else:
+                        await manager.send_text(json.dumps(result), websocket)
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-        print("Client disconnected")
+        print("WS Disconnected")
     except Exception as e:
-        print(f"Error: {e}")
-        # Try to close if possible, or just ignore
-        pass
+        print(f"WS Error: {e}")
 
-@router.post("/chat", response_model=dict)
-async def chat_text(payload: dict):
+@router.websocket("/realtime-relay")
+async def realtime_relay(websocket: WebSocket):
     """
-    Test endpoint for text-to-text chat.
-    Input: {"text": "Hello"}
-    Output: {"response": "Hi there"}
+    Relays messages between the client and OpenAI Realtime API.
     """
-    user_text = payload.get("text", "")
-    if not user_text:
-        return {"response": "Please provide text."}
+    await websocket.accept()
     
-    response_text = await llm_service.process(user_text)
-    return {"response": response_text}
-
-from fastapi import File, UploadFile
-from fastapi.responses import StreamingResponse
-import io
-import base64
-
-@router.post("/talk")
-async def talk_to_aura(file: UploadFile = File(...)):
-    """
-    Test full voice pipeline (One-shot).
-    Input: Audio file (WAV/MP3).
-    Output: Audio file (Response voice).
-    
-    1. STT: Converts uploaded audio to text.
-    2. LLM: Gets response from AI.
-    3. TTS: Converts response to audio.
-    """
-    # Read audio file
-    audio_bytes = await file.read()
-    
-    # 1. STT
-    user_text = await stt_service.transcribe(audio_bytes)
-    print(f"STT Transcript: {user_text}")
-    
-    if not user_text:
-        return {"error": "Could not understand audio"}
-
-    # 2. LLM
-    ai_response_text = await llm_service.process(user_text)
-    print(f"LLM Response: {ai_response_text}")
-
-    # 3. TTS
-    audio_output = await tts_service.speak(ai_response_text)
-    
-    # Encode audio to base64 to return in JSON
-    audio_base64 = base64.b64encode(audio_output).decode('utf-8')
-    
-    return {
-        "user_text": user_text,
-        "ai_response": ai_response_text,
-        "audio_base64": audio_base64
+    auth_header = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "OpenAI-Beta": "realtime=v1"
     }
+
+    try:
+        async with websockets.connect(REALTIME_URL, additional_headers=auth_header) as openai_ws:
+            print("Connected to OpenAI Realtime API")
+            
+            # Initialize session with language
+            await openai_ws.send(json.dumps({
+                "type": "session.update",
+                "session": {
+                    "instructions": f"Please speak in {CALL_LANG}."
+                }
+            }))
+
+            async def client_to_openai():
+                try:
+                    while True:
+                        message = await websocket.receive_text()
+                        await openai_ws.send(message)
+                except Exception as e:
+                    print(f"Client to OpenAI error: {e}")
+
+            async def openai_to_client():
+                try:
+                    async for message in openai_ws:
+                        await websocket.send_text(message)
+                except Exception as e:
+                    print(f"OpenAI to client error: {e}")
+
+            # Run both relay directions concurrently
+            await asyncio.gather(client_to_openai(), openai_to_client())
+
+    except WebSocketDisconnect:
+        print("Client disconnected from relay")
+    except Exception as e:
+        print(f"Relay Error: {e}")
+    finally:
+        try:
+            await websocket.close()
+        except:
+            pass
+

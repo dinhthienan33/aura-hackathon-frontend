@@ -1,89 +1,37 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { VoiceButtonProps } from "@/types";
-import { Mic, MicOff, Volume2 } from "lucide-react";
+import { Mic, Square } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 
 export default function VoiceButton({
   onVoiceStart,
   onVoiceEnd,
-  onTranscript,
   isListening,
   disabled,
   language,
 }: VoiceButtonProps) {
   const t = useTranslation(language);
-  const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
   const [isSupported, setIsSupported] = useState(true);
   const [audioLevel, setAudioLevel] = useState(0);
-  const finalTranscriptRef = useRef<string>("");
+  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    // Check if Web Speech API is supported
-    if (typeof window !== "undefined") {
-      const SpeechRecognition =
-        (window as any).SpeechRecognition ||
-        (window as any).webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        setIsSupported(false);
-        return;
-      }
-
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = language === "vi" ? "vi-VN" : "en-US";
-
-      recognition.onresult = (event: any) => {
-        let finalTranscript = "";
-        let interimTranscript = "";
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-
-        if (interimTranscript) {
-          onTranscript(interimTranscript);
-        }
-
-        if (finalTranscript) {
-          finalTranscriptRef.current += finalTranscript + " ";
-          onTranscript(finalTranscriptRef.current.trim());
-        }
-      };
-
-      recognition.onerror = (event: any) => {
-        console.error("Speech recognition error:", event.error);
-        if (event.error === "not-allowed") {
-          const msg =
-            language === "vi"
-              ? "Vui lòng cho phép truy cập microphone để sử dụng tính năng này."
-              : "Please allow microphone access to use this feature.";
-          alert(msg);
-        }
-      };
-
-      recognitionRef.current = recognition;
+    if (typeof window !== "undefined" && !window.navigator.mediaDevices) {
+      setIsSupported(false);
     }
+  }, []);
 
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
-  }, [onTranscript]);
-
-  // Simulate audio level animation when listening
+  // Audio level simulation for visual feedback
   useEffect(() => {
     if (isListening) {
       const interval = setInterval(() => {
-        setAudioLevel(Math.random() * 100);
+        setAudioLevel(30 + Math.random() * 70);
       }, 100);
       return () => clearInterval(interval);
     } else {
@@ -91,55 +39,80 @@ export default function VoiceButton({
     }
   }, [isListening]);
 
-  const handleClick = () => {
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/wav" });
+        onVoiceEnd(blob);
+        chunksRef.current = [];
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      onVoiceStart();
+      
+      // Haptic feedback simulation
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    } catch (err) {
+      console.error("Failed to start recording:", err);
+      alert(t.micAccessDenied);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+      
+      // Haptic feedback simulation
+      if (navigator.vibrate) {
+        navigator.vibrate([30, 50, 30]);
+      }
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (disabled || !isSupported) return;
 
+    // Create ripple effect
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const id = Date.now();
+      setRipples((prev) => [...prev, { id, x, y }]);
+      setTimeout(() => {
+        setRipples((prev) => prev.filter((r) => r.id !== id));
+      }, 600);
+    }
+
     if (isListening) {
-      // Stop listening
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-
-      // Send final transcript after stopping
-      setTimeout(() => {
-        const transcript = finalTranscriptRef.current.trim();
-        onVoiceEnd(transcript);
-        finalTranscriptRef.current = ""; // Reset for next session
-      }, 500);
+      stopRecording();
     } else {
-      // Start listening - reset transcript
-      finalTranscriptRef.current = "";
-      onVoiceStart();
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch (e) {
-          console.error("Failed to start recognition:", e);
-        }
-      }
-
-      // Auto-stop after 30 seconds for demo
-      setTimeout(() => {
-        if (recognitionRef.current) {
-          recognitionRef.current.stop();
-        }
-        const transcript = finalTranscriptRef.current.trim();
-        onVoiceEnd(transcript);
-        finalTranscriptRef.current = "";
-      }, 30000);
+      startRecording();
     }
   };
 
   if (!isSupported) {
     return (
       <div className="text-center">
-        <div className="w-24 h-24 bg-slate-300 rounded-full flex items-center justify-center mx-auto">
-          <MicOff className="w-12 h-12 text-slate-500" />
+        <div className="w-28 h-28 bg-warmGray-200 rounded-full flex items-center justify-center mx-auto">
+          <Mic className="w-12 h-12 text-warmGray-400" />
         </div>
-        <p className="text-elderly-sm text-slate-500 mt-3">
-          {language === "vi"
-            ? "Trình duyệt không hỗ trợ nhận diện giọng nói"
-            : "Browser does not support voice recognition"}
+        <p className="text-elderly-base text-warmGray-500 mt-4">
+          {t.browserNotSupported}
         </p>
       </div>
     );
@@ -147,76 +120,110 @@ export default function VoiceButton({
 
   return (
     <div className="flex flex-col items-center">
-      {/* Main Voice Button */}
-      <button
+      {/* Giant Microphone Button */}
+      <motion.button
+        ref={buttonRef}
         onClick={handleClick}
         disabled={disabled}
+        whileTap={{ scale: 0.95 }}
         className={`
-          relative
-          w-24 h-24 md:w-28 md:h-28
+          relative overflow-hidden
+          w-28 h-28 md:w-32 md:h-32
           rounded-full
           flex items-center justify-center
           transition-all duration-300
+          shadow-2xl
           ${
             disabled
-              ? "bg-slate-300 cursor-not-allowed"
+              ? "bg-warmGray-300 cursor-not-allowed"
               : isListening
-                ? "bg-blue-500 mic-recording"
-                : "bg-gradient-to-br from-blue-500 to-purple-600 hover:scale-110 shadow-xl hover:shadow-2xl"
+                ? "bg-gradient-to-br from-aura-danger to-red-700"
+                : "bg-gradient-to-br from-sage-400 to-sage-600 hover:from-sage-500 hover:to-sage-700"
           }
         `}
-        aria-label={isListening ? "Nhấn để dừng" : "Nhấn để nói"}
+        style={{
+          boxShadow: isListening
+            ? `0 0 0 ${audioLevel / 5}px rgba(193, 18, 31, 0.3), 0 8px 32px rgba(193, 18, 31, 0.4)`
+            : "0 8px 32px rgba(74, 124, 89, 0.3)",
+        }}
+        aria-label={isListening ? t.stopRecording : t.startSpeaking}
       >
-        {/* Audio Level Rings */}
+        {/* Ripple effects */}
+        <AnimatePresence>
+          {ripples.map((ripple) => (
+            <motion.span
+              key={ripple.id}
+              initial={{ scale: 0, opacity: 0.5 }}
+              animate={{ scale: 4, opacity: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="absolute rounded-full bg-white/40 pointer-events-none"
+              style={{
+                left: ripple.x - 10,
+                top: ripple.y - 10,
+                width: 20,
+                height: 20,
+              }}
+            />
+          ))}
+        </AnimatePresence>
+
+        {/* Audio level visualization */}
         {isListening && (
-          <>
-            <div
-              className="absolute inset-0 rounded-full bg-blue-400 opacity-30"
-              style={{
-                transform: `scale(${1 + audioLevel / 200})`,
-                transition: "transform 0.1s ease-out",
-              }}
-            />
-            <div
-              className="absolute inset-0 rounded-full bg-blue-400 opacity-20"
-              style={{
-                transform: `scale(${1.2 + audioLevel / 150})`,
-                transition: "transform 0.1s ease-out",
-              }}
-            />
-          </>
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="absolute inset-0 rounded-full"
+            style={{
+              background: `radial-gradient(circle, rgba(255,255,255,${audioLevel / 200}) 0%, transparent 70%)`,
+            }}
+          />
         )}
 
         {/* Icon */}
         <div className="relative z-10">
           {isListening ? (
-            <Volume2 className="w-12 h-12 md:w-14 md:h-14 text-white animate-pulse" />
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-lg"
+            />
           ) : (
             <Mic className="w-12 h-12 md:w-14 md:h-14 text-white" />
           )}
         </div>
-      </button>
 
-      {/* Status Text */}
-      <p
+        {/* Pulsing ring when recording */}
+        {isListening && (
+          <>
+            <motion.div
+              animate={{
+                scale: [1, 1.3, 1],
+                opacity: [0.5, 0, 0.5],
+              }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+              className="absolute inset-0 rounded-full border-4 border-white/30"
+            />
+          </>
+        )}
+      </motion.button>
+
+      {/* Label */}
+      <motion.p
+        key={isListening ? "recording" : "idle"}
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
         className={`
-        mt-4 text-elderly-lg font-semibold 
-        transition-all duration-300
-        ${isListening ? "text-blue-600" : "text-slate-600"}
-      `}
+          mt-4 text-elderly-lg font-medium
+          ${isListening ? "text-aura-danger" : "text-navy-700"}
+        `}
       >
-        {disabled
-          ? language === "vi"
-            ? "Đang kết nối..."
-            : "Connecting..."
-          : isListening
-            ? t.clickToStop
-            : t.clickToSpeak}
-      </p>
+        {isListening ? t.recordingLabel : t.pressToSpeak}
+      </motion.p>
 
-      {/* Help Text */}
-      <p className="text-elderly-sm text-slate-500 mt-2 text-center max-w-[200px]">
-        {isListening ? t.speakClearly : t.keepMicClose}
+      {/* Hint text */}
+      <p className="mt-1 text-elderly-sm text-warmGray-500">
+        {isListening ? t.pressToStop : t.stayStillHint}
       </p>
     </div>
   );
