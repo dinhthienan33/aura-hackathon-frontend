@@ -54,7 +54,6 @@ export interface Translations {
   sosHelpText: string;
   sosEmergency: string;
   sosResponse: string;
-  seconds: string;
 
   // Settings
   settingsTitle: string;
