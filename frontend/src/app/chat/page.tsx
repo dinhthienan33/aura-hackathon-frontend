@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -26,7 +26,7 @@ interface Message {
   timestamp: Date;
 }
 
-export default function ChatPage() {
+function ChatPageContent() {
   const [language] = useState<Language>("en");
   const t = useTranslation(language);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -278,5 +278,19 @@ export default function ChatPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-warmGray-200" />
+          <div className="h-4 w-32 bg-warmGray-200 rounded" />
+        </div>
+      </div>
+    }>
+      <ChatPageContent />
+    </Suspense>
   );
 }

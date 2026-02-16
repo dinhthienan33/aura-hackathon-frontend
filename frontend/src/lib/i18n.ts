@@ -26,6 +26,14 @@ export interface Translations {
   clickToStop: string;
   speakClearly: string;
   keepMicClose: string;
+  micAccessDenied: string;
+  browserNotSupported: string;
+  stopRecording: string;
+  startSpeaking: string;
+  recordingLabel: string;
+  pressToSpeak: string;
+  pressToStop: string;
+  stayStillHint: string;
 
   // Chat
   chatTitle: string;
@@ -54,6 +62,7 @@ export interface Translations {
   sosHelpText: string;
   sosEmergency: string;
   sosResponse: string;
+  seconds: string;
 
   // Settings
   settingsTitle: string;
