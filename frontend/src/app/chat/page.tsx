@@ -65,11 +65,55 @@ export default function ChatPage() {
     }
   }, [agentId]);
 
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  const playBase64Audio = async (base64String: string) => {
+    console.log("Attempting to play audio, length:", base64String.length);
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        console.log("Created new AudioContext");
+      }
+      const audioContext = audioContextRef.current;
+      
+      console.log("AudioContext state:", audioContext.state);
+      if (audioContext.state === 'suspended') {
+        console.log("Resuming AudioContext...");
+        await audioContext.resume();
+        console.log("AudioContext resumed");
+      }
+
+      // More robust base64 to arraybuffer conversion
+      const binaryString = window.atob(base64String);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      console.log("Decoding audio data...");
+      audioContext.decodeAudioData(bytes.buffer, (buffer) => {
+        console.log("Audio data decoded successfully, duration:", buffer.duration);
+        const source = audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioContext.destination);
+        source.start(0);
+        console.log("Audio playback started");
+      }, (err) => {
+        console.error("Error decoding audio data:", err);
+      });
+
+    } catch (err) {
+      console.error("Error in playBase64Audio:", err);
+    }
+  };
+
   // Connect to WebSocket
   useEffect(() => {
     if (!agentId) return;
     
-    const wsUrl = `ws://localhost:8089/api/v1/ws?agent_id=${agentId}`;
+    const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/api/v1";
+    const wsUrl = `${wsBaseUrl}/ws?agent_id=${agentId}`;
     const socket = new WebSocket(wsUrl);
     socket.binaryType = "blob";
 
@@ -100,6 +144,11 @@ export default function ChatPage() {
             }
           ]);
           setIsTyping(true);
+        } else if (data.type === "audio" || (data.status === "complete" && data.audio)) {
+          const audioData = data.content || data.audio;
+          if (audioData) {
+            playBase64Audio(audioData);
+          }
         }
       }
     };

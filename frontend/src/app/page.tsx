@@ -88,6 +88,7 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5 + index * 0.1, duration: 0.4 }}
+            className="h-full"
           >
             <Link
               href={item.href}
@@ -99,6 +100,7 @@ export default function Home() {
                 hover:scale-105 hover:shadow-2xl
                 active:scale-98
                 card-warm
+                h-full flex flex-col justify-between
               `}
             >
               <item.icon className="w-10 h-10 md:w-12 md:h-12 mb-4" />

@@ -24,6 +24,7 @@ export default function VoiceCall({ onClose, agentName, agentId }: VoiceCallProp
   const animationFrameRef = useRef<number | null>(null);
 
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
 
   const cleanUp = useCallback(() => {
      if (wsRef.current) {
@@ -71,10 +72,17 @@ export default function VoiceCall({ onClose, agentName, agentId }: VoiceCallProp
       }
   };
 
-  const sendAudio = (blob: Blob) => {
+  const sendAudio = async (blob: Blob) => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(blob); 
-          console.log("Sent audio blob:", blob.size, "bytes");
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              const base64 = (reader.result as string).split(',')[1];
+              wsRef.current?.send(JSON.stringify({
+                  audio_data: base64
+              }));
+              console.log("Sent audio data:", blob.size, "bytes");
+          };
+          reader.readAsDataURL(blob);
       }
   };
 
@@ -98,8 +106,18 @@ export default function VoiceCall({ onClose, agentName, agentId }: VoiceCallProp
              } catch (e) {}
         }
         
+        if (audioContextRef.current.state === 'suspended') {
+            await audioContextRef.current.resume();
+        }
+
         const source = audioContextRef.current.createBufferSource();
         source.buffer = audioBuffer;
+        
+        // Connect to same analyser used for recording visualization
+        if (analyserRef.current) {
+            source.connect(analyserRef.current);
+        }
+        
         source.connect(audioContextRef.current.destination);
         sourceRef.current = source;
         source.start(0);
@@ -123,7 +141,8 @@ export default function VoiceCall({ onClose, agentName, agentId }: VoiceCallProp
 
   const startCall = async () => {
     try {
-      const wsUrl = `ws://${window.location.hostname}:8089/api/v1/ws?agent_id=${agentId}`; 
+      const wsBaseUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://${window.location.hostname}:8000/api/v1`;
+      const wsUrl = `${wsBaseUrl}/ws?agent_id=${agentId}`; 
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -137,19 +156,27 @@ export default function VoiceCall({ onClose, agentName, agentId }: VoiceCallProp
         try {
             const data = JSON.parse(event.data);
             
-            if (data.type === "transcript") {
+            if (data.status === "processing") {
+                console.log(data.msg);
+                if (data.step === 1) {
+                    setStatus("processing");
+                }
+            } else if (data.type === "transcript") {
                 setTranscript(data.content);
-                setStatus("processing");
-            } else if (data.type === "llm_response") {
-                // LLM text response
-            } else if (data.type === "audio") {
+            } else if (data.status === "complete" && data.audio) {
+                if (data.text) {
+                    setTranscript(data.text);
+                }
                 if (!isSpeakerOff) {
                     setStatus("speaking");
-                    await playAudio(data.content);
+                    await playAudio(data.audio);
                     setStatus("idle");
                 } else {
                     setStatus("idle");
                 }
+            } else if (data.status === "error") {
+                console.error("Error from server:", data.msg);
+                setStatus("idle");
             }
         } catch (e) {
             console.error("Error parsing WS message", e);
@@ -179,6 +206,7 @@ export default function VoiceCall({ onClose, agentName, agentId }: VoiceCallProp
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
+        analyserRef.current = analyser;
         source.connect(analyser);
         
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -203,15 +231,18 @@ export default function VoiceCall({ onClose, agentName, agentId }: VoiceCallProp
 
         // Visualizer Loop
         const checkAudioLevel = () => {
-            if (status === "listening") {
-                analyser.getByteTimeDomainData(dataArray);
-                let sum = 0;
-                for (let i = 0; i < dataArray.length; i++) {
-                    const x = (dataArray[i] - 128) / 128.0;
-                    sum += x * x;
+            if (status === "listening" || status === "speaking") {
+                if (analyserRef.current) {
+                    analyserRef.current.getByteTimeDomainData(dataArray);
+                    let sum = 0;
+                    for (let i = 0; i < dataArray.length; i++) {
+                        const x = (dataArray[i] - 128) / 128.0;
+                        sum += x * x;
+                    }
+                    const rms = Math.sqrt(sum / dataArray.length);
+                    // Boost the level for visualization
+                    setVolumeLevel(rms * 1.5);
                 }
-                const rms = Math.sqrt(sum / dataArray.length);
-                setVolumeLevel(rms);
             } else {
                 setVolumeLevel(0);
             }

@@ -8,7 +8,7 @@ import { useTranslation } from "@/lib/i18n";
 export default function WelcomeModal({
   onClose,
   language,
-  onLanguageChange,
+  onLanguageChange,     
 }: WelcomeModalProps) {
   const t = useTranslation(language);
   const [step, setStep] = useState(1);
@@ -21,8 +21,6 @@ export default function WelcomeModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-blue-500 to-purple-600">
       <div className="bg-white rounded-3xl max-w-xl w-full shadow-2xl overflow-hidden">
-        
-        {/* STEP 1: Welcome & Language */}
         {step === 1 && (
           <div className="p-8 text-center">
             {/* Welcome Animation */}
@@ -33,12 +31,10 @@ export default function WelcomeModal({
             <h1 className="text-elderly-2xl font-bold text-slate-800 mb-4">
               {t.welcomeTitle}
             </h1>
-            <p className="text-elderly-lg text-slate-600 mb-8 leading-relaxed">
+            <p className="text-elderly-lg text-slate-600 mb-6 leading-relaxed">
               {t.welcomeSubtitle}
             </p>
 
-            {/* Language Selection Section */}
-            <div className="mb-8">
               <div className="flex items-center justify-center gap-2 mb-3">
                 <Globe className="w-5 h-5 text-slate-600" />
                 <span className="text-base font-semibold text-slate-600">
@@ -73,7 +69,6 @@ export default function WelcomeModal({
                   🇻🇳 Tiếng Việt
                 </button>
               </div>
-            </div>
 
             <button
               onClick={() => setStep(2)}
@@ -92,7 +87,6 @@ export default function WelcomeModal({
           </div>
         )}
 
-        {/* STEP 2: Features */}
         {step === 2 && (
           <div className="p-8">
             <h2 className="text-elderly-xl font-bold text-slate-800 mb-6 text-center">
@@ -159,7 +153,6 @@ export default function WelcomeModal({
           </div>
         )}
 
-        {/* STEP 3: Input Name */}
         {step === 3 && (
           <div className="p-8 text-center">
             <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">

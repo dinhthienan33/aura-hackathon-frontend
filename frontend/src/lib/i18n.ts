@@ -26,14 +26,6 @@ export interface Translations {
   clickToStop: string;
   speakClearly: string;
   keepMicClose: string;
-  micAccessDenied: string;
-  browserNotSupported: string;
-  stopRecording: string;
-  startSpeaking: string;
-  recordingLabel: string;
-  pressToSpeak: string;
-  pressToStop: string;
-  stayStillHint: string;
 
   // Chat
   chatTitle: string;
@@ -62,7 +54,6 @@ export interface Translations {
   sosHelpText: string;
   sosEmergency: string;
   sosResponse: string;
-  seconds: string;
 
   // Settings
   settingsTitle: string;
@@ -265,9 +256,6 @@ export interface Translations {
   mockTopic3: string;
   mockTopic4: string;
   mockTopic5: string;
-  mockFact1: string;
-  mockFact2: string;
-  mockFact3: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -419,9 +407,6 @@ export const translations: Record<Language, Translations> = {
     mockTopic3: "Gardening",
     mockTopic4: "Cooking",
     mockTopic5: "Exercise",
-    mockFact1: "Likes to garden",
-    mockFact2: "Enjoys morning tea",
-    mockFact3: "Has a grandson named Minh",
 
     // Navigation
     backToHome: "Back to Home",
@@ -699,9 +684,6 @@ export const translations: Record<Language, Translations> = {
     mockTopic3: "Làm vườn",
     mockTopic4: "Nấu ăn",
     mockTopic5: "Thể dục",
-    mockFact1: "Thích làm vườn",
-    mockFact2: "Thích uống trà sáng",
-    mockFact3: "Có cháu nội tên là Minh",
 
     // Navigation
     backToHome: "Về trang chủ",
