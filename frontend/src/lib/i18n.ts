@@ -145,6 +145,9 @@ export interface Translations {
   presetNurseDesc: string;
   defaultRelationship: string;
   playingSample: string;
+  mockFact1: string;
+  mockFact2: string;
+  mockFact3: string;
 
   // Memory Lane
   memoryLaneTitle: string;
@@ -447,6 +450,9 @@ export const translations: Record<Language, Translations> = {
     defaultRelationship:
       "Aura is your daughter, working far away and chatting with you every evening",
     playingSample: "🔊 Playing voice sample...",
+    mockFact1: "Likes to garden",
+    mockFact2: "Enjoys morning tea",
+    mockFact3: "Has a grandson named Minh",
 
     // Memory Lane
     memoryLaneTitle: "Memory Lane",
@@ -725,6 +731,9 @@ export const translations: Record<Language, Translations> = {
     defaultRelationship:
       "Aura là con gái của bà, đang đi làm xa và trò chuyện với bà mỗi tối",
     playingSample: "🔊 Đang phát mẫu giọng nói...",
+    mockFact1: "Thích làm vườn",
+    mockFact2: "Thích uống trà sáng",
+    mockFact3: "Có cháu nội tên Minh",
 
     // Memory Lane
     memoryLaneTitle: "Nhật Ký Kỷ Niệm",
